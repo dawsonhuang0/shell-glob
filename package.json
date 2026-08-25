@@ -15,12 +15,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dawsonhuang0/zsh-glob.git"
+    "url": "git+https://github.com/dawsonhuang0/z-shell-glob.git"
   },
   "bugs": {
-    "url": "https://github.com/dawsonhuang0/zsh-glob/issues"
+    "url": "https://github.com/dawsonhuang0/z-shell-glob/issues"
   },
-  "homepage": "https://github.com/dawsonhuang0/zsh-glob#readme",
+  "homepage": "https://github.com/dawsonhuang0/z-shell-glob#readme",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
