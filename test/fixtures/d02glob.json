@@ -1,0 +1,568 @@
+{
+  "steps": [
+    {
+      "type": "glob",
+      "word": "glob.tmp/*(/)",
+      "expected": [
+        "glob.tmp/dir1",
+        "glob.tmp/dir2",
+        "glob.tmp/dir3",
+        "glob.tmp/dir4"
+      ],
+      "options": {},
+      "name": "Just directories"
+    },
+    {
+      "type": "glob",
+      "word": "glob.tmp/*(.)",
+      "expected": [
+        "glob.tmp/a",
+        "glob.tmp/b",
+        "glob.tmp/c"
+      ],
+      "options": {},
+      "name": "Just files"
+    },
+    {
+      "type": "glob",
+      "word": "glob.tmp/**/(:h)",
+      "expected": [
+        ".",
+        "glob.tmp",
+        "glob.tmp",
+        "glob.tmp",
+        "glob.tmp",
+        "glob.tmp/dir3"
+      ],
+      "options": {},
+      "name": "Head modifier"
+    },
+    {
+      "type": "glob",
+      "word": "glob.tmp(:r)",
+      "expected": [
+        "glob"
+      ],
+      "options": {},
+      "name": "Remove extension modifier"
+    },
+    {
+      "type": "glob",
+      "word": "glob.tmp/*(:s/./_/)",
+      "expected": [
+        "glob_tmp/a",
+        "glob_tmp/b",
+        "glob_tmp/c",
+        "glob_tmp/dir1",
+        "glob_tmp/dir2",
+        "glob_tmp/dir3",
+        "glob_tmp/dir4"
+      ],
+      "options": {},
+      "name": "Substitute modifier"
+    },
+    {
+      "type": "glob",
+      "word": "glob.tmp/*(F)",
+      "expected": [
+        "glob.tmp/dir1",
+        "glob.tmp/dir2",
+        "glob.tmp/dir3"
+      ],
+      "options": {},
+      "name": "Just full dirs"
+    },
+    {
+      "type": "glob",
+      "word": "glob.tmp/*(^F)",
+      "expected": [
+        "glob.tmp/a",
+        "glob.tmp/b",
+        "glob.tmp/c",
+        "glob.tmp/dir4"
+      ],
+      "options": {},
+      "name": "Omit full dirs"
+    },
+    {
+      "type": "glob",
+      "word": "glob.tmp/*(/^F)",
+      "expected": [
+        "glob.tmp/dir4"
+      ],
+      "options": {},
+      "name": "Just empty dirs"
+    },
+    {
+      "type": "glob",
+      "word": "glob.tmp/**/*~*/dir3(/*|(#e))(/)",
+      "expected": [
+        "glob.tmp/dir1",
+        "glob.tmp/dir2",
+        "glob.tmp/dir4"
+      ],
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Exclusions with complicated path specifications"
+    },
+    {
+      "type": "glob",
+      "word": "glob.tmp/*(P:-f:)",
+      "expected": [
+        "-f",
+        "glob.tmp/a",
+        "-f",
+        "glob.tmp/b",
+        "-f",
+        "glob.tmp/c",
+        "-f",
+        "glob.tmp/dir1",
+        "-f",
+        "glob.tmp/dir2",
+        "-f",
+        "glob.tmp/dir3",
+        "-f",
+        "glob.tmp/dir4"
+      ],
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Prepending words to each argument"
+    },
+    {
+      "type": "glob",
+      "word": "glob.tmp/*(P:one word:P:another word:)",
+      "expected": [
+        "one word",
+        "another word",
+        "glob.tmp/a",
+        "one word",
+        "another word",
+        "glob.tmp/b",
+        "one word",
+        "another word",
+        "glob.tmp/c",
+        "one word",
+        "another word",
+        "glob.tmp/dir1",
+        "one word",
+        "another word",
+        "glob.tmp/dir2",
+        "one word",
+        "another word",
+        "glob.tmp/dir3",
+        "one word",
+        "another word",
+        "glob.tmp/dir4"
+      ],
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Prepending two words to each argument"
+    },
+    {
+      "type": "setup",
+      "command": "mkdir",
+      "path": "glob.tmp/ra=1.0_et=3.5"
+    },
+    {
+      "type": "setup",
+      "command": "touch",
+      "path": "glob.tmp/ra=1.0_et=3.5/foo"
+    },
+    {
+      "type": "glob",
+      "word": "glob.tmp/ra=1.0_et=3.5/???",
+      "expected": [
+        "glob.tmp/ra=1.0_et=3.5/foo"
+      ],
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Bug with intermediate paths with plain strings but tokenized characters"
+    },
+    {
+      "type": "setup",
+      "command": "mkdir",
+      "path": "glob.tmp/dir5"
+    },
+    {
+      "type": "setup",
+      "command": "touch",
+      "path": "glob.tmp/dir5/N123"
+    },
+    {
+      "type": "glob",
+      "word": "glob.tmp/dir5/N<->(N)",
+      "expected": [
+        "glob.tmp/dir5/N123"
+      ],
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Numeric glob is not usurped by process substitution."
+    },
+    {
+      "type": "setup",
+      "command": "rm",
+      "path": "glob.tmp/dir5"
+    },
+    {
+      "type": "glob",
+      "word": "glob.tmp/*.*",
+      "expected": [
+        "glob.tmp/ra=1.0_et=3.5"
+      ],
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Optimisation to squeeze multiple *'s used as ordinary glob wildcards."
+    },
+    {
+      "type": "glob",
+      "word": "glob.tmp/**************************.*************************",
+      "expected": [
+        "glob.tmp/ra=1.0_et=3.5"
+      ],
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Optimisation to squeeze multiple *'s used as ordinary glob wildcards."
+    },
+    {
+      "type": "match",
+      "string": "1_2_",
+      "pattern": "(*_)(#c1)",
+      "matches": true,
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Some more complicated backtracking with match counts."
+    },
+    {
+      "type": "match",
+      "string": "1_2_",
+      "pattern": "(*_)(#c2)",
+      "matches": true,
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Some more complicated backtracking with match counts."
+    },
+    {
+      "type": "match",
+      "string": "1_2_",
+      "pattern": "(*_)(#c3)",
+      "matches": false,
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Some more complicated backtracking with match counts."
+    },
+    {
+      "type": "match",
+      "string": "-",
+      "pattern": "[a-z]",
+      "matches": false,
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "- is a special character in ranges"
+    },
+    {
+      "type": "match",
+      "string": "b-1",
+      "pattern": "[a-z]-[0-9]",
+      "matches": true,
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "- untokenized following a bracketed subexpression"
+    },
+    {
+      "type": "match",
+      "string": "b-1",
+      "pattern": "[]a-z]-[]0-9]",
+      "matches": true,
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "- \"]\" after \"[\" is normal range character and - still works"
+    },
+    {
+      "type": "match",
+      "string": "a",
+      "pattern": "[^a]",
+      "matches": false,
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "^ active in character class if not quoted"
+    },
+    {
+      "type": "match",
+      "string": "a",
+      "pattern": "[!a]",
+      "matches": false,
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "! active in character class if not quoted"
+    },
+    {
+      "type": "match",
+      "string": "ab",
+      "pattern": "(|a*)~^(*b)",
+      "matches": true,
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Regression test for exclusion after branches: empty first alternative"
+    },
+    {
+      "type": "match",
+      "string": "ab",
+      "pattern": "(b|a*)~^(*b)",
+      "matches": true,
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Regression test for exclusion after branches: non-empty first alternative"
+    },
+    {
+      "type": "match",
+      "string": "ab",
+      "pattern": "(b*|a*)~^(*b)",
+      "matches": true,
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Regression test for exclusion after branches: full length first alternative"
+    },
+    {
+      "type": "match",
+      "string": "abc",
+      "pattern": "(|a*)~^(*b)",
+      "matches": false,
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Regression test for exclusion after branches: failure case 1"
+    },
+    {
+      "type": "match",
+      "string": "abc",
+      "pattern": "(b|a*)~^(*b)",
+      "matches": false,
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Regression test for exclusion after branches: failure case 2"
+    },
+    {
+      "type": "match",
+      "string": "abc",
+      "pattern": "(b*|a*)~^(*b)",
+      "matches": false,
+      "options": {
+        "extendedGlob": true
+      },
+      "name": "Regression test for exclusion after branches: failure case 3"
+    }
+  ],
+  "skipped": [
+    {
+      "name": "zsh globbing",
+      "why": "cannot translate: mkdir glob.tmp/dir{1,2,3,4}"
+    },
+    {
+      "name": "ksh compatibility",
+      "why": "cannot translate: globtest globtests.ksh"
+    },
+    {
+      "name": "single byte match with top bit set",
+      "why": "cannot translate: (unsetopt multibyte"
+    },
+    {
+      "name": "exclusions regression test",
+      "why": "cannot translate: ( regress_absolute_path_and_core_dump )"
+    },
+    {
+      "name": "Globbing used recursively (inside e glob qualifier)",
+      "why": "cannot translate: print glob.tmp/*(.e^'reply=( glob.tmp/*/${REPLY:t} )'^:t)"
+    },
+    {
+      "name": "Recursive globbing used recursively (inside e glob qualifier)",
+      "why": "cannot translate: print glob.tmp/*/*(e:'reply=( glob.tmp/**/*([1]) )'::t)"
+    },
+    {
+      "name": "Empty strings",
+      "why": "cannot translate: [[ \"\" = \"\" ]] && echo OK"
+    },
+    {
+      "name": "Must-match arguments in complex patterns",
+      "why": "cannot translate: foo=\"this string has a : colon in it\""
+    },
+    {
+      "name": "Named character sets handled internally",
+      "why": "cannot translate: doesmatch() {"
+    },
+    {
+      "name": "Misplaced (#c...) flag",
+      "why": "expects stderr or a fuzzy match"
+    },
+    {
+      "name": "disable -p",
+      "why": "cannot translate: tpd() {"
+    },
+    {
+      "name": "No error with empty null glob with (N).",
+      "why": "cannot translate: ("
+    },
+    {
+      "name": "kshglob option does not break +, @, ! without following open parenthesis",
+      "why": "cannot translate: (setopt kshglob"
+    },
+    {
+      "name": "Force glob expansion in conditions using (#q)",
+      "why": "cannot translate: ("
+    },
+    {
+      "name": "redirect to a non-matching pattern is an error even with flag (N)",
+      "why": "expects stderr or a fuzzy match"
+    },
+    {
+      "name": "(#q) glob expansion only on lhs of pattern-match conditions",
+      "why": "cannot translate: ("
+    },
+    {
+      "name": "short-circuit modifier",
+      "why": "cannot translate: (){ print $#@ } glob.tmp/dir*(Y1)"
+    },
+    {
+      "name": "(#q) is ignored completely in conditional pattern matching",
+      "why": "cannot translate: [[ \"ce fichier n'existe pas\"  = (#b)ce\\ (f[^ ]#)\\ *s(#q./) ]]"
+    },
+    {
+      "name": "Stripping of quotes from patterns (1)",
+      "why": "cannot translate: [[ foo = 'f'\\o\"o\" ]]"
+    },
+    {
+      "name": "Stripping of quotes from patterns (2)",
+      "why": "cannot translate: [[ foo = 'f'('o'|'a')('o'|'b') ]]"
+    },
+    {
+      "name": "Stripping of quotes from patterns (3)",
+      "why": "cannot translate: [[ fob = 'f'('o'|'a')('o'|'b') ]]"
+    },
+    {
+      "name": "Stripping of quotes from patterns (4)",
+      "why": "cannot translate: [[ fab = 'f'('o'|'a')('o'|'b') ]]"
+    },
+    {
+      "name": "Stripping of quotes from patterns (4)",
+      "why": "cannot translate: [[ fib != 'f'('o'|'a')('o'|'b') ]]"
+    },
+    {
+      "name": "- is not a special character in ranges if quoted",
+      "why": "cannot translate: [[ - = ['a-z'] ]]"
+    },
+    {
+      "name": "active - works in pattern in parameter",
+      "why": "cannot translate: headremove=\"bcdef\""
+    },
+    {
+      "name": "quoted - works in pattern in parameter",
+      "why": "cannot translate: headremove=\"bcdef\""
+    },
+    {
+      "name": "^ not active in character class if quoted",
+      "why": "cannot translate: [[ a = ['^a'] ]]"
+    },
+    {
+      "name": "! not active in character class if quoted",
+      "why": "cannot translate: [[ a = ['!a'] ]]"
+    },
+    {
+      "name": "character set specified as quoted variable",
+      "why": "cannot translate: cset=\"^a-z\""
+    },
+    {
+      "name": "character set specified as active variable",
+      "why": "cannot translate: cset=\"^a-z\""
+    },
+    {
+      "name": "modifier ':a' doesn't require existence",
+      "why": "cannot translate: () { print -l -- $@:a } / /..{,/} /1 /nonexistent/..{,/} /deeper/nonexistent/..{,/}"
+    },
+    {
+      "name": "modifier ':A' doesn't require existence",
+      "why": "expects stderr or a fuzzy match"
+    },
+    {
+      "name": "modifier ':A' resolves '..' components before symlinks",
+      "why": "cannot translate: ln -s dir3/subdir glob.tmp/link"
+    },
+    {
+      "name": "modifier ':P' resolves symlinks before '..' components",
+      "why": "expects stderr or a fuzzy match"
+    },
+    {
+      "name": "modifier ':P' with path too long",
+      "why": "cannot translate: bad_pwd=\"/${(l:16000:: :):-}\""
+    },
+    {
+      "name": "modifier ':P' with tokenised input",
+      "why": "cannot translate: print -r ${${:-/a-b=c}:P}"
+    },
+    {
+      "name": "handling of - range in complicated pattern context",
+      "why": "cannot translate: foo=a"
+    },
+    {
+      "name": "modifiers :h and :t with numbers (main test is in D04parameter.ztst)",
+      "why": "cannot translate: pathtotest=glob.tmp/my/test/dir/that/does/not/exist"
+    },
+    {
+      "name": "unreadable directories can be globbed (users/24619, users/24626)",
+      "why": "cannot translate: mkdir -m 000 glob.tmp/secret-d000"
+    },
+    {
+      "name": "names inside unreadable directories can be globbed if searchable",
+      "why": "cannot translate: for 1 in 000 111 444 ; do"
+    },
+    {
+      "name": "glob files in readable directories inside unreadable directories",
+      "why": "cannot translate: if (( EUID == 0 )); then"
+    },
+    {
+      "name": "non-directories not globbed as directories",
+      "why": "cannot translate: : > glob.tmp/not-a-directory"
+    },
+    {
+      "name": "the ':P' modifier handles symlink loops in the last path component",
+      "why": "expects stderr or a fuzzy match"
+    },
+    {
+      "name": "the ':P' modifier handles symlink loops before the last path component",
+      "why": "expects stderr or a fuzzy match"
+    },
+    {
+      "name": "the ':P' modifier handles symlink loops other than the trivial case",
+      "why": "expects stderr or a fuzzy match"
+    },
+    {
+      "name": "general glob qualifier quoting and expansion",
+      "why": "cannot translate: ("
+    },
+    {
+      "name": "e glob qualifier delimiters, quoting, and expansion",
+      "why": "cannot translate: ("
+    },
+    {
+      "name": "the '*' qualfier enables extended_glob for pattern matching",
+      "why": "cannot translate: print -r -- ${(*)=${(@s.+.):-A+B}/(#b)(?)/-${(L)match[1]} ${match[1]}}"
+    }
+  ]
+}

@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+.DS_Store
+
+# The zsh source is a clone of its own, kept for the differential tests and
+# for regenerating the fixtures.  It is 72M and has its own history, so it is
+# not tracked here -- see NOTES.md for how to set it up.  The suite does not
+# need it: the fixtures are committed, and test/zsh-diff.test.ts skips itself
+# when the binary is absent.
+zsh/

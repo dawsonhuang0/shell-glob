@@ -1,0 +1,73 @@
+{
+  "name": "zsh-glob",
+  "version": "1.0.0",
+  "description": "TypeScript port of zsh's globbing and pattern matching.",
+  "keywords": [
+    "zsh",
+    "glob",
+    "globbing",
+    "pattern",
+    "fnmatch",
+    "extendedglob",
+    "glob-qualifiers",
+    "filename-generation"
+  ],
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": {
+        "types": "./dist/index.d.ts",
+        "default": "./dist/index.js"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./pattern": {
+      "import": {
+        "types": "./dist/pattern.d.ts",
+        "default": "./dist/pattern.js"
+      },
+      "require": {
+        "types": "./dist/pattern.d.cts",
+        "default": "./dist/pattern.cjs"
+      }
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "NOTES.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "prepublishOnly": "npm run typecheck && npm run test && npm run build",
+    "fixtures": "ZSH=./zsh/Src/zsh && $ZSH -f ./scripts/gen-zsh-cases.zsh > test/fixtures/zsh-cases.txt && node scripts/extract-ztst.mjs && node scripts/harvest-patterns.mjs > /tmp/zg-patterns.zsh && $ZSH -f /tmp/zg-patterns.zsh > /tmp/zg-raw-patterns.txt && node scripts/compress-sweep.mjs /tmp/zg-raw-patterns.txt > test/fixtures/harvested.txt && node scripts/harvest-globs.mjs > /tmp/zg-globs.zsh && $ZSH -f /tmp/zg-globs.zsh > /tmp/zg-raw-globs.txt && node scripts/compress-globs.mjs /tmp/zg-raw-globs.txt > test/fixtures/harvested-globs.txt && node scripts/harvest-approx.mjs > /tmp/zg-approx.zsh && $ZSH -f /tmp/zg-approx.zsh > /tmp/zg-approx-out.txt && node scripts/write-approx.mjs /tmp/zg-approx-out.txt",
+    "coverage": "vitest run --coverage",
+    "build:zsh": "cd zsh && ./Util/preconfig && ./configure --disable-gdbm --disable-pcre && make -j8",
+    "patlog": "./scripts/instrument-zsh.sh",
+    "coverage:corpus": "node scripts/coverage-report.mjs && node scripts/absent-report.mjs",
+    "bench": "npm run build && node scripts/bench.mjs",
+    "zsh-approx": "./scripts/zsh-approx-exactend.sh"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@vitest/coverage-v8": "^2.1.9",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}
