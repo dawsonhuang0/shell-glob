@@ -1,6 +1,6 @@
-# z-shell-glob
+# shell-glob
 
-[![npm](https://img.shields.io/npm/v/z-shell-glob.svg)](https://www.npmjs.com/package/z-shell-glob)
+[![npm](https://img.shields.io/npm/v/shell-glob.svg)](https://www.npmjs.com/package/shell-glob)
 
 zsh's pattern matching and filename generation, ported to TypeScript.
 
@@ -14,7 +14,7 @@ follows `Src/glob.c`.
 ## Installation
 
 ```
-npm install z-shell-glob
+npm install shell-glob
 ```
 
 ## Usage
@@ -22,7 +22,7 @@ npm install z-shell-glob
 ### Finding files
 
 ```ts
-import { glob, globSync } from "z-shell-glob";
+import { glob, globSync } from "shell-glob";
 
 await glob("**/*.ts");         // async, via node:fs/promises
 globSync("**/*.ts");           // sync, via node:fs
@@ -65,11 +65,11 @@ They combine with implicit AND, and with `,` for OR. Both the bare form and
 
 ### Matching a string
 
-No filesystem involved. Import from `z-shell-glob/pattern` to leave `node:fs` out
+No filesystem involved. Import from `shell-glob/pattern` to leave `node:fs` out
 of the bundle entirely — that entry point runs in a browser.
 
 ```ts
-import { compile, match } from "z-shell-glob/pattern";
+import { compile, match } from "shell-glob/pattern";
 
 match("foo.c", "*.c~bar*", { extendedGlob: true });  // [[ foo.c = *.c~bar* ]]
 match("README", "(#i)readme", { extendedGlob: true });
@@ -90,7 +90,7 @@ with zsh's one-based indices and `-1` for a group that did not participate.
 
 The forms parameter expansion uses are all there:
 
-| zsh | z-shell-glob |
+| zsh | shell-glob |
 | --- | --- |
 | `[[ $s = $pat ]]` | `p.test(s)` |
 | `${s#pat}` | `s.slice(p.matchStart(s))` |
@@ -109,7 +109,7 @@ and tests easy. Failures come back as `null` rather than exceptions, so an
 unreadable directory contributes nothing instead of aborting the walk.
 
 ```ts
-import { globSync, type SyncFsAdapter } from "z-shell-glob";
+import { globSync, type SyncFsAdapter } from "shell-glob";
 
 const fs: SyncFsAdapter = {
   readdir: (path) => entriesFor(path),

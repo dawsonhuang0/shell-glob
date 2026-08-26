@@ -1,5 +1,5 @@
 {
-  "name": "z-shell-glob",
+  "name": "shell-glob",
   "version": "1.0.0",
   "description": "TypeScript port of zsh's globbing and pattern matching.",
   "keywords": [
@@ -15,12 +15,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/dawsonhuang0/z-shell-glob.git"
+    "url": "git+https://github.com/dawsonhuang0/shell-glob.git"
   },
   "bugs": {
-    "url": "https://github.com/dawsonhuang0/z-shell-glob/issues"
+    "url": "https://github.com/dawsonhuang0/shell-glob/issues"
   },
-  "homepage": "https://github.com/dawsonhuang0/z-shell-glob#readme",
+  "homepage": "https://github.com/dawsonhuang0/shell-glob#readme",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
