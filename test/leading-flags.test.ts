@@ -1,9 +1,10 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { globSync, match, ZshPatternError } from "../src/index.js";
 import { virtualFs } from "./helpers/virtual-fs.js";
+import { canSymlink, trySymlink } from "./helpers/platform.js";
 
 /**
  * `parsepat` peels one leading `(#...)` off the whole word before
@@ -21,7 +22,7 @@ beforeAll(() => {
   for (const f of ["a", "a.txt", "B.TXT", "sub/s1.txt", "sub/deep/d1.txt"]) {
     writeFileSync(join(tree, f), "");
   }
-  symlinkSync("sub", join(tree, "slink"));
+  trySymlink("sub", join(tree, "slink"));
 });
 
 afterAll(() => rmSync(tree, { recursive: true, force: true }));
@@ -29,7 +30,8 @@ afterAll(() => rmSync(tree, { recursive: true, force: true }));
 const run = (pattern: string, extra = {}) =>
   globSync(pattern, { cwd: tree, ...EXT, ...extra }).sort();
 
-describe("a leading globbing flag does not eat the globstar", () => {
+// The tree has a symlink in it, and these expectations name it.
+describe.skipIf(!canSymlink)("a leading globbing flag does not eat the globstar", () => {
   it("(#i)**/ still recurses, and matches case insensitively", () => {
     expect(run("(#i)**/*.txt")).toEqual(["B.TXT", "a.txt", "sub/deep/d1.txt", "sub/s1.txt"]);
   });

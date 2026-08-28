@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -13,6 +13,7 @@ import {
   ZshPatternError,
 } from "../src/index.js";
 import { virtualFs } from "./helpers/virtual-fs.js";
+import { canSymlink, trySymlink } from "./helpers/platform.js";
 
 let tree: string;
 
@@ -24,12 +25,13 @@ beforeAll(() => {
   writeFileSync(join(tree, "we(i)rd"), "");
   writeFileSync(join(tree, "weird"), "");
   writeFileSync(join(tree, "star*name"), "");
-  symlinkSync("..", join(tree, "sub/up")); // a loop for ***/ to survive
+  trySymlink("..", join(tree, "sub/up")); // a loop for ***/ to survive
 });
 
 afterAll(() => rmSync(tree, { recursive: true, force: true }));
 
-describe("the asynchronous API", () => {
+// The tree has a symlink in it, and these expectations name it.
+describe.skipIf(!canSymlink)("the asynchronous API", () => {
   it("applies qualifiers, which need stats", async () => {
     expect(await glob("*(.)", { cwd: tree })).toEqual([
       "a.txt", "star*name", "we(i)rd", "weird",

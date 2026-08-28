@@ -6,7 +6,6 @@ import {
   mkdtempSync,
   readFileSync,
   rmSync,
-  symlinkSync,
   utimesSync,
   writeFileSync,
 } from "node:fs";
@@ -15,6 +14,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { globSync, ZshPatternError, type GlobOptions } from "../src/index.js";
+import { canSymlink, trySymlink } from "./helpers/platform.js";
 import globTextsJson from "./fixtures/globs.json" with { type: "json" };
 
 /**
@@ -159,7 +159,7 @@ beforeAll(() => {
     writeFileSync(at(file), file === "big" ? "x".repeat(2000) : file === "small" ? "aaaa" : "");
   }
   for (const link of entries("treelinks")) {
-    symlinkSync(link === "linkdir" ? "dir1" : "nowhere", at(link));
+    trySymlink(link === "linkdir" ? "dir1" : "nowhere", at(link));
   }
   // The few attributes the fixture cannot carry: a mode, a FIFO and an old
   // timestamp, matching what scripts/harvest-globs.mjs sets up.
@@ -179,7 +179,10 @@ beforeAll(() => {
 
 afterAll(() => rmSync(tree, { recursive: true, force: true }));
 
-describe("globs harvested from zsh's test suite", () => {
+// The recorded tree has symlinks in it, and the expected results were
+// captured from that tree, so there is nothing to compare against on a host
+// that cannot make one.
+describe.skipIf(!canSymlink)("globs harvested from zsh's test suite", () => {
   it(`has a corpus, expanded by zsh ${zshVersion}`, () => {
     expect(optionNames.length).toBeGreaterThan(3);
     expect(entries("treefiles").length).toBeGreaterThan(500);

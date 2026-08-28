@@ -1,8 +1,9 @@
-import { mkdirSync, mkdtempSync, readdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { globSync } from "../src/index.js";
+import { canSymlink, trySymlink } from "./helpers/platform.js";
 
 /**
  * `parsecomplist` recurses past each `/`, so a run of slashes is
@@ -19,7 +20,7 @@ beforeAll(() => {
   mkdirSync(join(tree, "sub"));
   mkdirSync(join(tree, "empty"));
   writeFileSync(join(tree, "sub", "s1.txt"), "");
-  symlinkSync("sub", join(tree, "slink"));
+  trySymlink("sub", join(tree, "slink"));
 });
 
 afterAll(() => rmSync(tree, { recursive: true, force: true }));
@@ -27,7 +28,8 @@ afterAll(() => rmSync(tree, { recursive: true, force: true }));
 const run = (pattern: string) =>
   globSync(pattern, { cwd: tree, extendedGlob: true, nullGlob: true }).sort();
 
-describe("a run of slashes is kept", () => {
+// The tree has a symlink in it, and these expectations name it.
+describe.skipIf(!canSymlink)("a run of slashes is kept", () => {
   const cases: [string, string[]][] = [
     ["sub//s1.txt", ["sub//s1.txt"]],
     ["sub//", ["sub//"]],

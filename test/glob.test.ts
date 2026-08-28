@@ -1,4 +1,4 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, utimesSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, utimesSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -10,6 +10,7 @@ import {
   type GlobOptions,
   type SyncFsAdapter,
 } from "../src/index.js";
+import { canSymlink, trySymlink } from "./helpers/platform.js";
 
 let tree: string;
 const EXT = { extendedGlob: true } as const;
@@ -25,8 +26,8 @@ beforeAll(() => {
   writeFileSync(join(tree, "src/index.ts"), "index");
   writeFileSync(join(tree, "src/nested/deep.ts"), "deep");
   writeFileSync(join(tree, "docs/guide.md"), "guide");
-  symlinkSync("src", join(tree, "link-to-src"));
-  symlinkSync("nowhere", join(tree, "broken"));
+  trySymlink("src", join(tree, "link-to-src"));
+  trySymlink("nowhere", join(tree, "broken"));
   // A fixed old timestamp, for the time qualifiers.
   const old = new Date("2020-01-01T00:00:00Z");
   utimesSync(join(tree, "readme.md"), old, old);
@@ -37,7 +38,8 @@ afterAll(() => rmSync(tree, { recursive: true, force: true }));
 const g = (pattern: string, options: GlobOptions = {}) =>
   globSync(pattern, { cwd: tree, extendedGlob: true, nullGlob: true, ...options });
 
-describe("filename generation", () => {
+// The tree has a symlink in it, and these expectations name it.
+describe.skipIf(!canSymlink)("filename generation", () => {
   it("expands a simple pattern in sorted order", () => {
     expect(g("*.ts")).toEqual(["a.ts", "b.ts"]);
   });
@@ -122,7 +124,8 @@ describe("no matches", () => {
   });
 });
 
-describe("glob qualifiers", () => {
+// The tree has a symlink in it, and these expectations name it.
+describe.skipIf(!canSymlink)("glob qualifiers", () => {
   it("selects by file type", () => {
     expect(g("*(/)")).toEqual(["docs", "empty", "src"]);
     expect(g("*(.)")).toEqual(["a.ts", "b.ts", "big.bin", "readme.md"]);
@@ -457,7 +460,8 @@ describe("SH_GLOB and a numeric range", () => {
  * is already there, so a path that already ends in a slash gains a second one.
  * Verified against the zsh built from ./zsh.
  */
-describe("MARK_DIRS appends unconditionally", () => {
+// The tree has a symlink in it, and these expectations name it.
+describe.skipIf(!canSymlink)("MARK_DIRS appends unconditionally", () => {
   let marked: string;
 
   beforeAll(() => {
@@ -465,7 +469,7 @@ describe("MARK_DIRS appends unconditionally", () => {
     mkdirSync(join(marked, "sub", "deep"), { recursive: true });
     mkdirSync(join(marked, "empty"));
     writeFileSync(join(marked, "f.txt"), "");
-    symlinkSync("sub", join(marked, "slink"));
+    trySymlink("sub", join(marked, "slink"));
   });
 
   afterAll(() => rmSync(marked, { recursive: true, force: true }));

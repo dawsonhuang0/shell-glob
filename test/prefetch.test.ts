@@ -1,5 +1,5 @@
 import * as fs from "node:fs";
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
@@ -10,6 +10,7 @@ import {
   type GlobOptions,
   type SyncFsAdapter,
 } from "../src/index.js";
+import { trySymlink } from "./helpers/platform.js";
 
 /**
  * The asynchronous walk reads the tree a level at a time so that the reads
@@ -36,9 +37,9 @@ beforeAll(() => {
   ]) {
     writeFileSync(join(tree, file), "");
   }
-  symlinkSync(join(tree, "a"), join(tree, "link"));
+  trySymlink(join(tree, "a"), join(tree, "link"));
   // A symlink pointing back up the tree, which `***\/` must not loop on.
-  symlinkSync("..", join(tree, "a/up"));
+  trySymlink("..", join(tree, "a/up"));
 });
 
 afterAll(() => rmSync(tree, { recursive: true, force: true }));

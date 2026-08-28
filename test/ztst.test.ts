@@ -1,8 +1,9 @@
-import { mkdirSync, mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { compile, globSync, match, type ZshOptionsInput } from "../src/index.js";
+import { canSymlink, trySymlink } from "./helpers/platform.js";
 import fixture from "./fixtures/ztst.json" with { type: "json" };
 
 /**
@@ -52,7 +53,7 @@ beforeAll(() => {
     for (const command of commands) {
       const path = join(root, command.path);
       if (command.command === "mkdir") mkdirSync(path, { recursive: true });
-      else if (command.command === "symlink") symlinkSync(command.target!, path);
+      else if (command.command === "symlink") trySymlink(command.target!, path);
       else {
         mkdirSync(dirname(path), { recursive: true });
         writeFileSync(path, "");
@@ -117,7 +118,8 @@ function applyArraySearch(step: Extract<Step, { type: "arraySearch" }>): string 
 const byFile: Record<string, Step[]> = {};
 for (const step of steps) (byFile[step.file] ??= []).push(step);
 
-describe("zsh's own test suite", () => {
+// Several of zsh's own cases build a symlink and then match against it.
+describe.skipIf(!canSymlink)("zsh's own test suite", () => {
   for (const [file, fileSteps] of Object.entries(byFile)) {
     describe(file, () => {
       for (const step of fileSteps) {

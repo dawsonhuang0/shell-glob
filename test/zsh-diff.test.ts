@@ -1,10 +1,11 @@
 import { execFileSync } from "node:child_process";
-import { mkdtempSync, mkdirSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
+import { mkdtempSync, mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { globSync } from "../src/index.js";
+import { canSymlink, trySymlink } from "./helpers/platform.js";
 
 /**
  * Differential test: every pattern is expanded by the real zsh and by this
@@ -44,8 +45,8 @@ beforeAll(() => {
   for (const [i, file] of files.entries()) {
     writeFileSync(join(tree, file), "x".repeat(i));
   }
-  symlinkSync("dir1", join(tree, "linkdir"));
-  symlinkSync("nowhere", join(tree, "broken"));
+  trySymlink("dir1", join(tree, "linkdir"));
+  trySymlink("nowhere", join(tree, "broken"));
 });
 
 afterAll(() => {
@@ -143,7 +144,7 @@ const patterns = [
   "**/*(Odon)",
 ];
 
-describe.skipIf(!zshAvailable)("matches real zsh", () => {
+describe.skipIf(!zshAvailable || !canSymlink)("matches real zsh", () => {
   for (const pattern of patterns) {
     it(`expands ${pattern}`, () => {
       const expected = zshGlob(pattern);
