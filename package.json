@@ -1,6 +1,6 @@
 {
   "name": "shell-glob",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "TypeScript port of zsh's globbing and pattern matching.",
   "keywords": [
     "zsh",
