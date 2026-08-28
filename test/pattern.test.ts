@@ -1,14 +1,13 @@
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { match } from "../src/index.js";
+import { fixtureLines } from "./helpers/fixture.js";
 
 const EXT = { extendedGlob: true } as const;
 
 /** Reads one of zsh's own `res str pat` corpus files. */
 function corpus(file: string) {
-  return readFileSync(fileURLToPath(new URL(`./fixtures/${file}`, import.meta.url)), "utf8")
-    .split("\n")
+  return fixtureLines(fileURLToPath(new URL(`./fixtures/${file}`, import.meta.url)))
     .map((line) => line.trim())
     .filter((line) => line.length > 0 && !line.startsWith("#"))
     .map((line) => {

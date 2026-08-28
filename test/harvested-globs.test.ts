@@ -4,7 +4,6 @@ import {
   existsSync,
   mkdirSync,
   mkdtempSync,
-  readFileSync,
   rmSync,
   utimesSync,
   writeFileSync,
@@ -15,6 +14,7 @@ import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { globSync, ZshPatternError, type GlobOptions } from "../src/index.js";
 import { canSymlink, trySymlink } from "./helpers/platform.js";
+import { fixtureLines } from "./helpers/fixture.js";
 import globTextsJson from "./fixtures/globs.json" with { type: "json" };
 
 /**
@@ -26,10 +26,9 @@ import globTextsJson from "./fixtures/globs.json" with { type: "json" };
  */
 const SEPARATOR = "";
 
-const lines = readFileSync(
+const lines = fixtureLines(
   fileURLToPath(new URL("./fixtures/harvested-globs.txt", import.meta.url)),
-  "utf8",
-).split("\n");
+);
 
 const header = new Map(
   lines

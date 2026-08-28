@@ -1,18 +1,16 @@
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { match } from "../src/index.js";
+import { fixtureLines } from "./helpers/fixture.js";
 
 /**
  * Cases captured from the real zsh by scripts/gen-zsh-cases.zsh.  Each line is
  * "status<TAB>options<TAB>string<TAB>pattern", where status is what
  * `[[ $string = ${~pattern} ]]` returned.
  */
-const cases = readFileSync(
+const cases = fixtureLines(
   fileURLToPath(new URL("./fixtures/zsh-cases.txt", import.meta.url)),
-  "utf8",
 )
-  .split("\n")
   .filter((line) => line.length > 0)
   .map((line) => {
     const [status, opts, str, pat] = line.split("\t");

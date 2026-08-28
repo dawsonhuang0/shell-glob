@@ -1,7 +1,7 @@
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { match } from "../src/index.js";
+import { fixtureLines } from "./helpers/fixture.js";
 
 /**
  * `(#a...)` was the one corner no corpus reached: `harvested.txt` holds not a
@@ -53,8 +53,7 @@ const CORPUS = fileURLToPath(new URL("./fixtures/approx.txt", import.meta.url));
 const DIVERGENCES = fileURLToPath(new URL("./fixtures/approx-divergences.txt", import.meta.url));
 
 const lines = (path: string) =>
-  readFileSync(path, "utf8")
-    .split("\n")
+  fixtureLines(path)
     .filter((line) => line.length > 0 && !line.startsWith("#"));
 
 /** "t", "f", or "E" where zsh rejects the pattern outright. */

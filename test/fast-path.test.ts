@@ -1,7 +1,7 @@
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { compile } from "../src/index.js";
+import { fixtureLines } from "./helpers/fixture.js";
 
 /**
  * `*.ts`, `prefix*`, `*inner*`, a plain word and any fixed width pattern are
@@ -16,8 +16,7 @@ import { compile } from "../src/index.js";
  */
 const CORPUS = fileURLToPath(new URL("./fixtures/approx.txt", import.meta.url));
 
-const cases = readFileSync(CORPUS, "utf8")
-  .split("\n")
+const cases = fixtureLines(CORPUS)
   .filter((line) => line.length > 0 && !line.startsWith("#"))
   .map((line) => {
     const [, pattern, subject = ""] = line.split("\t");

@@ -1,7 +1,7 @@
-import { readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it } from "vitest";
 import { compile, ZshPatternError, type ZshOptionsInput } from "../src/index.js";
+import { fixtureLines } from "./helpers/fixture.js";
 import patternTexts from "./fixtures/patterns.json" with { type: "json" };
 import subjectTexts from "./fixtures/subjects.json" with { type: "json" };
 
@@ -16,10 +16,9 @@ import subjectTexts from "./fixtures/subjects.json" with { type: "json" };
  * One row per distinct outcome, tagged with the combinations that produce it.
  * See scripts/harvest-patterns.mjs and scripts/compress-sweep.mjs.
  */
-const lines = readFileSync(
+const lines = fixtureLines(
   fileURLToPath(new URL("./fixtures/harvested.txt", import.meta.url)),
-  "utf8",
-).split("\n");
+);
 
 const header = new Map(
   lines
