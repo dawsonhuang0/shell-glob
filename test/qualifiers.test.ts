@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { globSync, ZshPatternError, type GlobOptions } from "../src/index.js";
 import { virtualFs, type VirtualTree } from "./helpers/virtual-fs.js";
+import { hasUnixIds } from "./helpers/platform.js";
 
 const DAY = 86_400_000;
 const NOW = 1_700_000_000_000;
@@ -150,7 +151,7 @@ describe("qualifiers by ownership and identity", () => {
     expect(() => g("*(g:them:)")).toThrow(/resolveGroup/);
   });
 
-  it("matches the effective user with U and G", () => {
+  it.skipIf(!hasUnixIds)("matches the effective user with U and G", () => {
     // The virtual files carry the current uid, so U and G select them.
     const mine = { ...tree, "/v": { plain: { uid: process.getuid?.(), gid: process.getgid?.() } } };
     expect(globSync("*(U)", { cwd: "/v", fs: virtualFs(mine), nullGlob: true })).toEqual(["plain"]);
@@ -371,8 +372,14 @@ describe("the Y short circuit", () => {
   it("an explicit sort is applied to the n it kept, not to the whole set", () => {
     const first3 = order.slice(0, 3);
     expect(run("*.t(Y3on)")).toEqual([...first3].sort());
-    // Sorting first and then trimming would give the three smallest names.
-    expect(run("*.t(Y3on)")).not.toEqual([...order].sort().slice(0, 3));
+    // Sorting first and then trimming would give the three smallest names --
+    // a different set, unless the filesystem hands names back in sorted order
+    // to begin with, as NTFS does, in which case there is nothing to tell
+    // apart and the check above is the whole of what can be asserted.
+    const sortedFirst3 = [...order].sort().slice(0, 3);
+    if (JSON.stringify(first3.slice().sort()) !== JSON.stringify(sortedFirst3)) {
+      expect(run("*.t(Y3on)")).not.toEqual(sortedFirst3);
+    }
   });
 
   it("counts files that survive the qualifiers, not candidates", () => {

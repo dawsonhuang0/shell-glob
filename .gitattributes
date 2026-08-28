@@ -1,0 +1,11 @@
+# The fixtures are captured from zsh byte for byte, and several hold bytes
+# that are not text at all -- a lone \r among them.  Git's Windows default
+# rewrites line endings on checkout, which corrupts them: a subject recorded
+# as `readme` comes back as `readme\r` and stops matching `readme`.
+#
+# So no fixture is ever converted, and the rest of the tree is normalised to
+# LF in the repository whatever the checkout does.
+* text=auto eol=lf
+
+test/fixtures/** -text
+*.txt -text

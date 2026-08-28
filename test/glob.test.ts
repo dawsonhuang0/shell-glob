@@ -10,7 +10,7 @@ import {
   type GlobOptions,
   type SyncFsAdapter,
 } from "../src/index.js";
-import { canSymlink, trySymlink } from "./helpers/platform.js";
+import { asPattern, canSymlink, trySymlink } from "./helpers/platform.js";
 
 let tree: string;
 const EXT = { extendedGlob: true } as const;
@@ -92,8 +92,12 @@ describe.skipIf(!canSymlink)("filename generation", () => {
   });
 
   it("returns absolute paths for an absolute pattern", () => {
-    expect(g(`${tree}/*.ts`)).toEqual([`${tree}/a.ts`, `${tree}/b.ts`]);
-    expect(g("*.ts", { absolute: true })).toEqual([`${tree}/a.ts`, `${tree}/b.ts`]);
+    // `mkdtempSync` gives a native path, which on Windows holds backslashes:
+    // escapes in a pattern, not separators.  A caller converts them, and so
+    // does the expectation, since results come back in the same spelling.
+    const root = asPattern(tree);
+    expect(g(`${root}/*.ts`)).toEqual([`${root}/a.ts`, `${root}/b.ts`]);
+    expect(g("*.ts", { absolute: true })).toEqual([`${root}/a.ts`, `${root}/b.ts`]);
   });
 
   it("leaves a pattern with nothing to match alone", () => {

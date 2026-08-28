@@ -44,3 +44,18 @@ export function trySymlink(target: string, path: string): boolean {
     return false;
   }
 }
+
+/**
+ * A host path written the way a *pattern* has to spell it.
+ *
+ * `mkdtempSync` hands back a native path, and on Windows that means
+ * backslashes -- which are escapes in a pattern, not separators.  A test that
+ * builds a pattern or an expected result from one has to convert it, exactly
+ * as a caller would.
+ */
+export function asPattern(path: string): string {
+  return path.replace(/\\/g, "/");
+}
+
+/** True where the host has Unix user and group ids at all. */
+export const hasUnixIds: boolean = typeof process !== "undefined" && typeof process.getuid === "function";

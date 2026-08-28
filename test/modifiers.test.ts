@@ -4,6 +4,7 @@ import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { globSync, ZshPatternError } from "../src/index.js";
 import { virtualFs } from "./helpers/virtual-fs.js";
+import { asPattern } from "./helpers/platform.js";
 
 /**
  * The colon modifiers, checked against what zsh 5.9 produces for the same
@@ -69,7 +70,7 @@ describe("colon modifiers", () => {
 
   it("makes a path absolute with a, resolving . and .. on the way", () => {
     expect(m("sub/deep/f.txt(:a)")).toBe("/v/sub/deep/f.txt");
-    const real = mkdtempSync(join(tmpdir(), "zsh-mod-"));
+    const real = asPattern(mkdtempSync(join(tmpdir(), "zsh-mod-")));
     mkdirSync(join(real, "sub/deep"), { recursive: true });
     writeFileSync(join(real, "sub/deep/f.txt"), "");
     expect(globSync("sub/../sub/deep/f.txt(:a)", { cwd: real, nullGlob: true })[0]).toBe(

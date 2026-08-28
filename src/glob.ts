@@ -1224,7 +1224,12 @@ function* finish(plan: Plan, ctx: Context, candidates: Candidate[]): FsGenerator
     const full = absolutePath(ctx, candidate.path);
 
     if (needStat || candidate.dirent === null) {
-      lst = yield* lstat(full);
+      // A path that ends in a separator names a directory, so a link at the
+      // end of it is followed rather than described: POSIX says `lstat` on
+      // `slink/` reports what the link points at, and `*/` under MARK_DIRS
+      // gets its second slash from that.  Windows does not follow the same
+      // rule, so the resolution is asked for rather than assumed.
+      lst = full.endsWith("/") ? yield* stat(full) : yield* lstat(full);
       // A path built only from literal segments has to be checked for existence.
       if (!lst) continue;
       if (q.needsStat) stt = lst.isSymbolicLink() ? yield* stat(full) : lst;
