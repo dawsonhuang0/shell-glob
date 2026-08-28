@@ -6,4 +6,8 @@ export default defineConfig({
   dts: true,
   clean: true,
   target: "node18",
+  // tsup rewrites `node:fs` to `fs` by default, for hosts too old to know the
+  // prefix.  Keep it: Deno needs it to recognise a Node builtin at all, and it
+  // cannot be shadowed by a package that happens to be called `fs`.
+  removeNodeProtocol: false,
 });

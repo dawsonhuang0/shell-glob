@@ -1,10 +1,16 @@
 import { ZshPatternError } from "./errors.js";
+import { isAbsolutePath } from "./paths.js";
 
 /**
  * The history-style colon modifiers that may follow glob qualifiers, e.g.
  * `*(.:t)` for the basename of every plain file.
  */
-export function applyModifier(value: string, modifier: string, cwd: string): string {
+export function applyModifier(
+  value: string,
+  modifier: string,
+  cwd: string,
+  windows = false,
+): string {
   const global = modifier.startsWith("g") && modifier.length > 1;
   const mod = global ? modifier.slice(1) : modifier;
 
@@ -52,7 +58,9 @@ export function applyModifier(value: string, modifier: string, cwd: string): str
     case "u":
       return value.toUpperCase();
     case "a":
-      return normalizePath(value.startsWith("/") ? value : `${cwd}/${value}`);
+      // A path that is already absolute is left alone -- which on Windows
+      // includes a drive letter, so `C:/proj/a.txt` is not joined onto `cwd`.
+      return normalizePath(isAbsolutePath(value, windows) ? value : `${cwd}/${value}`);
     case "s": {
       const { from, to } = parseSubstitution(mod);
       return global ? value.split(from).join(to) : value.replace(from, to);

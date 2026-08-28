@@ -1,4 +1,5 @@
 import { NoMatchError, ZshPatternError } from "./errors.js";
+import { isAbsolutePath, pathRoot, toPosix, windowsPathsByDefault } from "./paths.js";
 import {
   lstat,
   nodeAsyncFs,
@@ -56,6 +57,15 @@ export interface GlobOptions extends ZshOptionsInput {
    * different names, which is why zsh does not do this anywhere else.
    */
   nfcNames?: boolean;
+  /**
+   * Read `cwd` and absolute patterns by Windows' rules: a drive letter or a
+   * UNC share begins an absolute path, and `\` is accepted as a separator
+   * *in a path* -- never in a pattern, where it is the escape character.
+   *
+   * Defaults to true on Windows and false elsewhere, so a directory named
+   * `C:` on a Unix host is still an ordinary name.
+   */
+  windowsPaths?: boolean;
   /** Guard against symlink loops while recursing with `***\/`. */
   maxDepth?: number;
 }
@@ -176,6 +186,8 @@ interface Context {
   wanted: number;
   /** Compose directory entry names to NFC; see `GlobOptions.nfcNames`. */
   nfc: boolean;
+  /** Read paths by Windows' rules; see `GlobOptions.windowsPaths`. */
+  windows: boolean;
   /** Directories on the current descent, to stop `***\/` looping. */
   seen: Set<string>;
   /**
@@ -187,14 +199,16 @@ interface Context {
 }
 
 function makeContext(options: GlobOptions, parallel: boolean): Context {
+  const windows = options.windowsPaths ?? windowsPathsByDefault();
   return {
     parallel,
+    windows,
     ordered: false,
     wanted: Infinity,
     nfc:
       options.nfcNames ??
       (typeof process !== "undefined" && process.platform === "darwin"),
-    cwd: options.cwd ?? (typeof process !== "undefined" ? process.cwd() : "/"),
+    cwd: toPosix(options.cwd ?? (typeof process !== "undefined" ? process.cwd() : "/")),
     absolute: options.absolute ?? false,
     now: options.now ?? Date.now(),
     maxDepth: options.maxDepth ?? 64,
@@ -1143,8 +1157,13 @@ function* expand(
   }
 }
 
-function trimTrailingSlash(path: string): string {
-  return path.length > 1 && path.endsWith("/") ? path.slice(0, -1) : path;
+function trimTrailingSlash(path: string, ctx: Context): string {
+  if (!path.endsWith("/")) return path;
+  // The separator that roots a path is part of it: trimming `C:/` to `C:`
+  // would name the working directory of drive C rather than its root, just as
+  // trimming `/` to `""` would name nothing at all.
+  const root = pathRoot(path, ctx.windows);
+  return path.length > root.length ? path.slice(0, -1) : path;
 }
 
 /**
@@ -1157,13 +1176,15 @@ function dirFor(ctx: Context, prefix: string | null, sep: string): string {
   const path = joinPath(prefix, "", sep);
   // The separator leaves a trailing slash behind; a real filesystem does not
   // mind, but a name is a name, and the listing cache keys on it.
-  return absolutePath(ctx, trimTrailingSlash(path));
+  return absolutePath(ctx, trimTrailingSlash(path, ctx));
 }
 
 function absolutePath(ctx: Context, path: string | null): string {
   if (path === null || path === "") return ctx.cwd;
-  if (path.startsWith("/")) return path;
-  return `${ctx.cwd}/${path}`;
+  if (isAbsolutePath(path, ctx.windows)) return toPosix(path);
+  // The cwd already carries one spelling of its separators, so a single `/`
+  // joins them -- Windows accepts it as readily as `\`.
+  return ctx.cwd.endsWith("/") ? ctx.cwd + path : `${ctx.cwd}/${path}`;
 }
 
 function* isDirectory(ctx: Context, path: string, entry: GlobDirent): FsGenerator<boolean> {
@@ -1218,7 +1239,7 @@ function* finish(plan: Plan, ctx: Context, candidates: Candidate[]): FsGenerator
     const qctx: QualContext = {
       path: candidate.path,
       fullPath: full,
-      name: baseName(candidate.path),
+      name: baseName(candidate.path, ctx),
       lstat: lst,
       stat: stt,
       emptyDir,
@@ -1243,7 +1264,9 @@ function* finish(plan: Plan, ctx: Context, candidates: Candidate[]): FsGenerator
     // `**/` under MARK_DIRS gives `sub//`.
     if (listTypes) value += typeMark(entry.ctx.lstat);
     else if (markDirs && entry.ctx.lstat?.isDirectory()) value += "/";
-    for (const modifier of q.modifiers) value = applyModifier(value, modifier, ctx.cwd);
+    for (const modifier of q.modifiers) {
+      value = applyModifier(value, modifier, ctx.cwd, ctx.windows);
+    }
     return { value, ctx: entry.ctx };
   });
 
@@ -1353,8 +1376,8 @@ function* finish(plan: Plan, ctx: Context, candidates: Candidate[]): FsGenerator
   return out;
 }
 
-function baseName(path: string): string {
-  const trimmed = trimTrailingSlash(path);
+function baseName(path: string, ctx: Context): string {
+  const trimmed = trimTrailingSlash(path, ctx);
   const i = trimmed.lastIndexOf("/");
   return i < 0 ? trimmed : trimmed.slice(i + 1);
 }
