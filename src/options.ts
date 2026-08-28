@@ -52,6 +52,10 @@ export interface ZshOptions {
   multibyte: boolean;
   /** `POSIX_IDENTIFIERS`: `[:IDENT:]` covers only ASCII, not any alphanumeric. */
   posixIdentifiers: boolean;
+  /** `IGNORE_BRACES`: leave `{a,b}` alone instead of expanding it. */
+  ignoreBraces: boolean;
+  /** `BRACE_CCL`: expand `{a-mnop}` to the characters it names. */
+  braceCcl: boolean;
 }
 
 export const defaultOptions: ZshOptions = {
@@ -73,6 +77,8 @@ export const defaultOptions: ZshOptions = {
   badPattern: true,
   multibyte: true,
   posixIdentifiers: false,
+  ignoreBraces: false,
+  braceCcl: false,
 };
 
 export type ZshOptionsInput = Partial<ZshOptions>;

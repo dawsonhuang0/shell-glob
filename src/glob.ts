@@ -17,6 +17,7 @@ import {
   type SyncFsAdapter,
 } from "./fs.js";
 import { applyModifier } from "./modifiers.js";
+import { expandBraces } from "./braces.js";
 import { resolveOptions, type ZshOptions, type ZshOptionsInput } from "./options.js";
 import { ZshPattern } from "./pattern.js";
 import {
@@ -148,6 +149,9 @@ export async function glob(pattern: string, options: GlobOptions = {}): Promise<
  */
 export function expandWordsSync(words: string[], options: GlobOptions = {}): string[] {
   const opt = resolveOptions(options);
+  // zsh brace-expands each word before globbing any of them, so `{a,b}*`
+  // becomes two patterns and each is judged on its own from here on.
+  words = words.flatMap((word) => expandBraces(word, opt));
   if (!opt.cshNullGlob) return words.flatMap((word) => globSync(word, options));
 
   const perWord = words.map((word) => {

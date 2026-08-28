@@ -15,3 +15,4 @@ export type {
 export type { QualContext, QualifierHooks } from "./qualifiers.js";
 
 export { evaluateArith } from "./arith.js";
+export { expandBraces } from "./braces.js";
