@@ -63,6 +63,16 @@ globSync("*(/F)", { markDirs: true }); // non-empty dirs, with a trailing /
 They combine with implicit AND, and with `,` for OR. Both the bare form and
 `*(#q...)` are recognised.
 
+A trailing `:` starts the colon modifiers, all twenty of them, including the
+prefixes that change how the one after them runs:
+
+```ts
+globSync("**/*.c(:r)");          // without the extension
+globSync("*(:gs/old/new/)");     // substitute, every occurrence
+globSync("*(:s:a:b:)");          // any delimiter, `:` included
+globSync("link/*(:A)");          // absolute, with symlinks resolved
+```
+
 ### Word expansion
 
 The stages zsh runs *before* globbing, from the same `Src/glob.c` and
@@ -136,6 +146,9 @@ The forms parameter expansion uses are all there:
 Anything with `readdir`, `lstat` and `stat` will do, which makes virtual trees
 and tests easy. Failures come back as `null` rather than exceptions, so an
 unreadable directory contributes nothing instead of aborting the walk.
+`realpath` is optional and only the `:A` and `:P` modifiers ask for it; without
+it they give the lexical answer, which is the same one wherever the path holds
+no symbolic link.
 
 ```ts
 import { globSync, type SyncFsAdapter } from "shell-glob";
