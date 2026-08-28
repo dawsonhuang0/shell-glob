@@ -63,6 +63,35 @@ globSync("*(/F)", { markDirs: true }); // non-empty dirs, with a trailing /
 They combine with implicit AND, and with `,` for OR. Both the bare form and
 `*(#q...)` are recognised.
 
+### Word expansion
+
+The stages zsh runs *before* globbing, from the same `Src/glob.c` and
+`Src/subst.c`. `expandWordsSync` is the whole pipeline — braces, then `~`
+and `=`, then globbing — because that is what the shell applies to a word:
+
+```ts
+import { expandWordsSync, expandBraces, expandFilename } from "shell-glob";
+
+expandWordsSync(["src/*.{ts,js}"]);   // braces, then each half globbed
+expandBraces("{1..10..3}", opts);     // ["1","4","7","10"]
+expandBraces("{a,b{c,d}}", opts);     // ["a","bc","bd"]
+```
+
+`~` and `=` need to know things a library cannot discover — a home
+directory, a directory stack, where a command lives — so they are told:
+
+```ts
+globSync("~/src/*.ts", { fileExpansion: true });
+globSync("~proj/*.ts", { fileExpansion: { namedDirs: (n) => lookup(n) } });
+```
+
+`fileExpansion` is off for `glob`/`globSync`, which are filename generation
+and nothing else, and on for `expandWordsSync`. Unset fields fall back to the
+process: `home` to `$HOME`, `commandPath` to a `$PATH` search.
+
+Parameter expansion (`${...}`), command substitution and process substitution
+are not here and will not be: the last two run programs.
+
 ### Matching a string
 
 No filesystem involved. Import from `shell-glob/pattern` to leave `node:fs` out
@@ -159,12 +188,14 @@ zsh's options, with zsh's defaults.
 | `noMatch` | `true` | | `bareGlobQual` | `true` |
 | `glob` | `true` | | `badPattern` | `true` |
 | `multibyte` | `true` | | `posixIdentifiers` | `false` |
+| `ignoreBraces` | `false` | | `braceCcl` | `false` |
+| `equals` | `true` | | | |
 
 That is every option in zsh's "Expansion and Globbing" section that reaches
 pattern matching or filename generation; the rest belong to earlier stages of
 word expansion. For `glob`/`globSync` there are also `cwd`, `absolute`,
-`fs`/`fsAsync`, `qualifierHooks`, `now`, `maxDepth`, `nfcNames` and
-`windowsPaths`.
+`fs`/`fsAsync`, `qualifierHooks`, `now`, `maxDepth`, `nfcNames`,
+`windowsPaths` and `fileExpansion`.
 
 `CSH_NULL_GLOB` judges a whole command rather than a word, so
 `expandWordsSync(words, options)` is what applies it.
@@ -192,9 +223,10 @@ always come back with `/` separators, as zsh writes them.
 - **Shell code in qualifiers** — `e:...:`, `+cmd`, `oe:...:`, `o+cmd` — needs a
   hook, since this package does not run a shell. So do `u:name:` and `g:name:`,
   which Node cannot resolve on its own. Everything else needs nothing.
-- **No tilde or brace expansion.** `~/foo` and `{a,b}` are earlier stages of
-  word expansion, not filename generation. Here `~` is only the exclusion
-  operator.
+- **No parameter or command substitution.** `${x}` and `$(cmd)` are earlier
+  stages of word expansion; the latter two run programs, which this does not.
+  Brace and filename expansion *are* here — see **Word expansion** — but a
+  bare `glob()` still treats `{` literally and `~` as the exclusion operator.
 - **`[[:INCOMPLETE:]]` and `[[:INVALID:]]` never match**, since a JavaScript
   string cannot hold a partial or invalid character.
 - **Unsupported colon modifiers** (`:A`, `:q`, `:Q`, `:P`) throw rather than
@@ -220,7 +252,7 @@ shortcut survives that. Accuracy won.
 ## Testing
 
 ```
-npm test          # 130,547 assertions
+npm test          # 130,575 assertions
 npm run coverage
 ```
 

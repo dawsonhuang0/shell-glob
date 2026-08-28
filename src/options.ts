@@ -56,6 +56,8 @@ export interface ZshOptions {
   ignoreBraces: boolean;
   /** `BRACE_CCL`: expand `{a-mnop}` to the characters it names. */
   braceCcl: boolean;
+  /** `EQUALS`: expand a leading `=` to the path of the command it names. */
+  equals: boolean;
 }
 
 export const defaultOptions: ZshOptions = {
@@ -79,6 +81,7 @@ export const defaultOptions: ZshOptions = {
   posixIdentifiers: false,
   ignoreBraces: false,
   braceCcl: false,
+  equals: true,
 };
 
 export type ZshOptionsInput = Partial<ZshOptions>;

@@ -30,7 +30,7 @@ export class ZshPatternError extends Error {
    * do, such as running the shell code an `e` qualifier holds.  zsh would
    * simply run it, so there is no message of its own to copy.
    */
-  readonly kind: "pattern" | "qualifier" | "unsupported";
+  readonly kind: "pattern" | "qualifier" | "unsupported" | "expansion";
   /**
    * What was actually wrong -- `unmatched '['`, and so on.  zsh does not print
    * this, so it is kept apart from `message` rather than folded into it.
@@ -41,7 +41,7 @@ export class ZshPatternError extends Error {
     detail: string,
     pattern: string,
     position: number,
-    kind: "pattern" | "qualifier" | "unsupported" = "pattern",
+    kind: "pattern" | "qualifier" | "unsupported" | "expansion" = "pattern",
   ) {
     // A qualifier names its own fault; a pattern is only ever reported as
     // being a bad one.  An `unsupported` fault is this package's own and has

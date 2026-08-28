@@ -18,6 +18,7 @@ import {
 } from "./fs.js";
 import { applyModifier } from "./modifiers.js";
 import { expandBraces } from "./braces.js";
+import { expandFilename, type FileExpansionEnv } from "./filesub.js";
 import { resolveOptions, type ZshOptions, type ZshOptionsInput } from "./options.js";
 import { ZshPattern } from "./pattern.js";
 import {
@@ -34,6 +35,15 @@ export interface GlobOptions extends ZshOptionsInput {
   cwd?: string;
   /** Return absolute paths even for a relative pattern. */
   absolute?: boolean;
+  /**
+   * Expand a leading `~` or `=` before globbing: `true` for the defaults, or
+   * an object saying what the forms that ask about the world should be told.
+   *
+   * Off by default for `glob` and `globSync`, which are filename generation
+   * and nothing else, and on by default for `expandWordsSync`, which models a
+   * whole word.  Pass `false` there to turn it off.
+   */
+  fileExpansion?: boolean | FileExpansionEnv;
   /** Filesystem for `globSync`; defaults to `node:fs`. */
   fs?: SyncFsAdapter;
   /** Filesystem for `glob`; defaults to `node:fs/promises`. */
@@ -122,7 +132,24 @@ interface Candidate {
 }
 
 /** Expand a zsh filename generation pattern. */
+/**
+ * Applies filename expansion to a word when the caller asked for it.
+ *
+ * It is off unless asked, because `glob` is filename generation and this is a
+ * stage before it: a word like `~foo` means a user's home to the shell and an
+ * ordinary name to a globber, and changing that under an existing caller would
+ * turn a matched file into an error.  `expandWordsSync` models a whole word
+ * and so does it by default.
+ */
+function withFileExpansion(word: string, options: GlobOptions, opt: ZshOptions): string {
+  const asked = options.fileExpansion;
+  if (!asked) return word;
+  const env = typeof asked === "object" ? asked : {};
+  return expandFilename(word, opt, { cwd: options.cwd, ...env });
+}
+
 export function globSync(pattern: string, options: GlobOptions = {}): string[] {
+  pattern = withFileExpansion(pattern, options, resolveOptions(options));
   const plan = planGlob(pattern, options);
   const fs = options.fs ?? nodeSyncFs();
   const ctx = makeContext(options, false);
@@ -132,6 +159,7 @@ export function globSync(pattern: string, options: GlobOptions = {}): string[] {
 
 /** Expand a zsh filename generation pattern, reading the filesystem asynchronously. */
 export async function glob(pattern: string, options: GlobOptions = {}): Promise<string[]> {
+  pattern = withFileExpansion(pattern, options, resolveOptions(options));
   const plan = planGlob(pattern, options);
   const fs = options.fsAsync ?? nodeAsyncFs();
   const ctx = makeContext(options, true);
@@ -152,6 +180,13 @@ export function expandWordsSync(words: string[], options: GlobOptions = {}): str
   // zsh brace-expands each word before globbing any of them, so `{a,b}*`
   // becomes two patterns and each is judged on its own from here on.
   words = words.flatMap((word) => expandBraces(word, opt));
+  // Then filename expansion, which prefork does straight afterwards.  Here it
+  // is on by default: this is the word-level API, and a word is what the
+  // shell applies it to.
+  if (options.fileExpansion !== false) {
+    const env = typeof options.fileExpansion === "object" ? options.fileExpansion : {};
+    words = words.map((word) => expandFilename(word, opt, { cwd: options.cwd, ...env }));
+  }
   if (!opt.cshNullGlob) return words.flatMap((word) => globSync(word, options));
 
   const perWord = words.map((word) => {

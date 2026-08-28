@@ -16,3 +16,5 @@ export type { QualContext, QualifierHooks } from "./qualifiers.js";
 
 export { evaluateArith } from "./arith.js";
 export { expandBraces } from "./braces.js";
+export { expandFilename } from "./filesub.js";
+export type { FileExpansionEnv } from "./filesub.js";
