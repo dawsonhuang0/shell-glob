@@ -51,6 +51,11 @@ export interface SyncFsAdapter {
   lstat(path: string): GlobStats | null;
   /** `stat`, or `null` if it fails for any reason. */
   stat(path: string): GlobStats | null;
+  /**
+   * The path with its symbolic links resolved, for the `:A` and `:P`
+   * modifiers.  Optional: without it they give the lexical answer.
+   */
+  realpath?(path: string): string | null;
 }
 
 export interface AsyncFsAdapter {
@@ -59,6 +64,8 @@ export interface AsyncFsAdapter {
   readdirOrdered?(path: string): Promise<GlobDirent[] | null>;
   lstat(path: string): Promise<GlobStats | null>;
   stat(path: string): Promise<GlobStats | null>;
+  /** See `SyncFsAdapter.realpath`.  Synchronous: a modifier cannot wait. */
+  realpath?(path: string): string | null;
 }
 
 export type FsRequest =

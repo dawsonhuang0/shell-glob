@@ -96,8 +96,11 @@ function stackEntry(
   return fail("not enough directory stack entries.", word, opts);
 }
 
-/** A `PATH` search, used when nothing better was supplied. */
-function defaultCommandPath(name: string): string | null {
+/**
+ * A `PATH` search, used when nothing better was supplied.  Exported because
+ * the `:c` modifier is the same lookup: zsh calls `equalsubstr` for both.
+ */
+export function defaultCommandPath(name: string): string | null {
   const runnable = (path: string): boolean => {
     try {
       const st = nodeFs.statSync(path);

@@ -1,5 +1,6 @@
 import { evaluateArith } from "./arith.js";
 import { ZshPatternError } from "./errors.js";
+import { splitModifiers } from "./modifiers.js";
 import type { GlobStats } from "./fs.js";
 
 /** `MAX_SORTS` in Src/glob.c: how many `o`/`O` specifiers a list may hold. */
@@ -217,10 +218,7 @@ export function parseQualifiers(
         break;
       case ":":
         // The rest of the list is colon modifiers.
-        q.modifiers = text
-          .slice(i - 1)
-          .split(":")
-          .filter((m) => m.length > 0);
+        q.modifiers = splitModifiers(text.slice(i - 1));
         i = text.length;
         break;
       case "^":

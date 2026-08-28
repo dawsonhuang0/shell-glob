@@ -3,6 +3,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { describe, expect, it } from "vitest";
 import { globSync, ZshPatternError } from "../src/index.js";
+import { splitModifiers } from "../src/modifiers.js";
 import { virtualFs } from "./helpers/virtual-fs.js";
 import { asPattern } from "./helpers/platform.js";
 
@@ -15,6 +16,9 @@ const fs = virtualFs({
     "a.tar.gz": {},
     noext: {},
     ".hidden": {},
+    aXaXa: {},
+    "a b": {},
+    "a\\ b": {},
     sub: { type: "dir" },
   },
   "/v/sub": { ".hidden": {}, "f.txt": {}, deep: { type: "dir" } },
@@ -87,9 +91,42 @@ describe("colon modifiers", () => {
     expect(m("sub/deep/f.txt(:t:r)")).toBe("f");
   });
 
-  it("rejects a modifier it does not implement, rather than ignoring it", () => {
-    expect(() => m("noext(:P)")).toThrow(ZshPatternError);
-    expect(() => m("noext(:q)")).toThrow(/unsupported modifier/);
+  it("rejects a modifier that is not one, rather than ignoring it", () => {
+    expect(() => m("noext(:Z)")).toThrow(ZshPatternError);
+    expect(() => m("noext(:Z)")).toThrow(/unsupported modifier/);
     expect(() => m("noext(:s)")).toThrow(/missing delimiter/);
+  });
+
+  // A modifier may hold colons of its own, so the list is scanned rather than
+  // split.  Each of these was checked against the shell.
+  it("scans the list instead of splitting it on every colon", () => {
+    expect(splitModifiers(":s:a:Y:")).toEqual(["s:a:Y:"]);
+    expect(splitModifiers(":F:2:s/a/Y/")).toEqual(["F:2:s/a/Y/"]);
+    expect(splitModifiers(":W:X:s/a/Y/")).toEqual(["W:X:s/a/Y/"]);
+    expect(splitModifiers(":h:t")).toEqual(["h", "t"]);
+    expect(splitModifiers(":t3:r")).toEqual(["t3", "r"]);
+    // zsh stops as soon as the next character is not a colon, so the `t` is
+    // dropped rather than applied.
+    expect(splitModifiers(":s:a:Y:t")).toEqual(["s:a:Y:"]);
+  });
+
+  it("applies the prefixes that change how a modifier runs", () => {
+    expect(m("aXaXa(:gs/a/Y/)")).toBe("YXYXY");
+    expect(m("aXaXa(:fs/a/Y/)")).toBe("YXYXY");
+    expect(m("aXaXa(:F:2:s/a/Y/)")).toBe("YXYXa");
+    expect(m("aXaXa(:ws/a/Y/)")).toBe("YXaXa");
+    // A prefix with nothing after it is left alone, not an error.
+    expect(m("aXaXa(:g)")).toBe("aXaXa");
+  });
+
+  it("repeats the last substitution for :&", () => {
+    expect(m("aXaXa(:s/a/Y/:&)")).toBe("YXYXa");
+    // With no substitution before it there is nothing to repeat.
+    expect(m("aXaXa(:&)")).toBe("aXaXa");
+  });
+
+  it("quotes and unquotes", () => {
+    expect(m("a b(:q)")).toBe("a\\ b");
+    expect(m("a\\ b(:Q)")).toBe("a b");
   });
 });

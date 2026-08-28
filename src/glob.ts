@@ -16,7 +16,13 @@ import {
   type GlobStats,
   type SyncFsAdapter,
 } from "./fs.js";
-import { applyModifier } from "./modifiers.js";
+import {
+  applyModifier,
+  type ModifierContext,
+  type ModifierState,
+} from "./modifiers.js";
+import * as nodeFs from "node:fs";
+import { defaultCommandPath } from "./filesub.js";
 import { expandBraces } from "./braces.js";
 import { expandFilename, type FileExpansionEnv } from "./filesub.js";
 import { resolveOptions, type ZshOptions, type ZshOptionsInput } from "./options.js";
@@ -133,6 +139,20 @@ interface Candidate {
 
 /** Expand a zsh filename generation pattern. */
 /**
+ * What `:c` and `:A` need to be told.  Both ask about the world rather than
+ * the string, and both go through the same adapters the rest of the globber
+ * uses, so a virtual filesystem answers them too.
+ */
+function modifierContext(ctx: Context): ModifierContext {
+  return {
+    cwd: ctx.cwd,
+    windows: ctx.windows,
+    commandPath: defaultCommandPath,
+    realpath: ctx.realpath,
+  };
+}
+
+/**
  * Applies filename expansion to a word when the caller asked for it.
  *
  * It is off unless asked, because `glob` is filename generation and this is a
@@ -210,6 +230,13 @@ interface Context {
   maxDepth: number;
   hooks: QualifierHooks;
   /**
+   * `:A` and `:P`, which resolve symbolic links.  Taken from the filesystem
+   * adapter when it offers one, so a virtual tree answers for itself; without
+   * it those modifiers give the lexical answer, which is what they come to
+   * whenever there is no link in the path anyway.
+   */
+  realpath?: (path: string) => string | null | undefined;
+  /**
    * True when the driver can serve several reads at once, which only the
    * asynchronous one can.  Reading a level ahead costs the synchronous driver
    * the same syscalls in the same order and buys it nothing, so it does not.
@@ -254,7 +281,17 @@ function makeContext(options: GlobOptions, parallel: boolean): Context {
     hooks: options.qualifierHooks ?? {},
     seen: new Set(),
     listings: new Map(),
+    realpath: options.fs?.realpath ?? options.fsAsync?.realpath ?? nodeRealpath,
   };
+}
+
+/** `realpath` through `node:fs`, for the adapters that do not offer one. */
+function nodeRealpath(path: string): string | null {
+  try {
+    return nodeFs.realpathSync(path);
+  } catch {
+    return null;
+  }
 }
 
 // --------------------------------------------------------------------- plan
@@ -1308,8 +1345,10 @@ function* finish(plan: Plan, ctx: Context, candidates: Candidate[]): FsGenerator
     // `**/` under MARK_DIRS gives `sub//`.
     if (listTypes) value += typeMark(entry.ctx.lstat);
     else if (markDirs && entry.ctx.lstat?.isDirectory()) value += "/";
+    // `:&` carries the last `:s` across the whole list, as zsh does.
+    const state: ModifierState = {};
     for (const modifier of q.modifiers) {
-      value = applyModifier(value, modifier, ctx.cwd, ctx.windows);
+      value = applyModifier(value, modifier, modifierContext(ctx), false, state);
     }
     return { value, ctx: entry.ctx };
   });

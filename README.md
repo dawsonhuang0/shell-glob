@@ -229,8 +229,8 @@ always come back with `/` separators, as zsh writes them.
   bare `glob()` still treats `{` literally and `~` as the exclusion operator.
 - **`[[:INCOMPLETE:]]` and `[[:INVALID:]]` never match**, since a JavaScript
   string cannot hold a partial or invalid character.
-- **Unsupported colon modifiers** (`:A`, `:q`, `:Q`, `:P`) throw rather than
-  being silently ignored.
+- **A modifier that is not one** throws rather than being silently ignored.
+  All twenty zsh has are implemented.
 
 ## Performance
 
@@ -252,7 +252,7 @@ shortcut survives that. Accuracy won.
 ## Testing
 
 ```
-npm test          # 130,575 assertions
+npm test          # 130,579 assertions
 npm run coverage
 ```
 
