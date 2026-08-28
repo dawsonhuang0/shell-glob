@@ -163,10 +163,27 @@ zsh's options, with zsh's defaults.
 That is every option in zsh's "Expansion and Globbing" section that reaches
 pattern matching or filename generation; the rest belong to earlier stages of
 word expansion. For `glob`/`globSync` there are also `cwd`, `absolute`,
-`fs`/`fsAsync`, `qualifierHooks`, `now`, `maxDepth` and `nfcNames`.
+`fs`/`fsAsync`, `qualifierHooks`, `now`, `maxDepth`, `nfcNames` and
+`windowsPaths`.
 
 `CSH_NULL_GLOB` judges a whole command rather than a word, so
 `expandWordsSync(words, options)` is what applies it.
+
+## Windows
+
+Patterns are always written with `/`, because `\` is the escape character —
+`src/*.ts` is the pattern on every platform. What changes is how a *path* you
+pass in is read: `windowsPaths` decides whether `C:\x` and `\\server\share`
+count as absolute and where a path's root ends. It follows `process.platform`,
+so there is normally nothing to set.
+
+```ts
+globSync("*.ts", { cwd: "C:/src" });                  // absolute on Windows
+globSync("*.ts", { cwd: "/src", windowsPaths: false }); // POSIX rules anywhere
+```
+
+Set it explicitly to test one platform's behaviour from the other. Results
+always come back with `/` separators, as zsh writes them.
 
 ## What is different from the shell
 
@@ -203,9 +220,13 @@ shortcut survives that. Accuracy won.
 ## Testing
 
 ```
-npm test          # 130,538 assertions, nothing skipped
+npm test          # 130,547 assertions
 npm run coverage
 ```
+
+Everything runs on a Unix host. A Windows one skips what it cannot put in a
+test tree — a FIFO, a filename containing `*`, and symbolic links unless
+Developer Mode is on — and says so rather than failing.
 
 The corpus is not scraped from zsh's test files — it is captured from zsh
 itself, by patching `patcompile()` to log every pattern it compiles and then
