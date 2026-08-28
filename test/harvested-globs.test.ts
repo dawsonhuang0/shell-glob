@@ -13,7 +13,7 @@ import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { globSync, ZshPatternError, type GlobOptions } from "../src/index.js";
-import { canSymlink, trySymlink } from "./helpers/platform.js";
+import { canFifo, canSymlink, trySymlink } from "./helpers/platform.js";
 import { fixtureLines } from "./helpers/fixture.js";
 import globTextsJson from "./fixtures/globs.json" with { type: "json" };
 
@@ -168,15 +168,24 @@ beforeAll(() => {
     const old = new Date("2000-01-01T00:00:00Z");
     utimesSync(at("old.txt"), old, old);
   }
-  rmSync(at("fifo"), { force: true });
-  try {
+  if (canFifo) {
+    rmSync(at("fifo"), { force: true });
     execFileSync("mkfifo", [at("fifo")]);
-  } catch {
-    // A platform without mkfifo simply has no FIFO in the tree.
   }
 });
 
 afterAll(() => rmSync(tree, { recursive: true, force: true }));
+
+/**
+ * Whether a recorded result names the FIFO, in any form a glob can produce it:
+ * bare, under a directory, and with the type character LIST_TYPES appends.  A
+ * case like this cannot be judged on a host with no `mkfifo`, because the tree
+ * it was captured from is not the tree we are able to build.
+ */
+const FIFO_ENTRY = /(^|\/)fifo[|@=*%/]?$/;
+function needsFifo(expected: string[]): boolean {
+  return expected.some((entry) => FIFO_ENTRY.test(entry));
+}
 
 // The recorded tree has symlinks in it, and the expected results were
 // captured from that tree, so there is nothing to compare against on a host
@@ -207,7 +216,7 @@ describe.skipIf(!canSymlink)("globs harvested from zsh's test suite", () => {
     // `Y` short circuits in directory traversal order, which differs between
     // two separately created trees, so only the number of matches is stable.
     const countOnly = /\(#?q?[^)]*Y\d/.test(glob);
-    it.skipIf(KNOWN_DIVERGENCES.has(glob))(label, () => {
+    it.skipIf(KNOWN_DIVERGENCES.has(glob) || (!canFifo && needsFifo(expected)))(label, () => {
       for (const combo of combos) {
         let actual: string[];
         try {

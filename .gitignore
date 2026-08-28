@@ -10,3 +10,6 @@ coverage/
 # need it: the fixtures are committed, and test/zsh-diff.test.ts skips itself
 # when the binary is absent.
 zsh/
+
+# Captured output from a test run on another machine, dropped here to be read.
+out

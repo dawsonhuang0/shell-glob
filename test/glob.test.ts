@@ -10,7 +10,7 @@ import {
   type GlobOptions,
   type SyncFsAdapter,
 } from "../src/index.js";
-import { asPattern, canSymlink, trySymlink } from "./helpers/platform.js";
+import { asPattern, canOddFilenames, canSymlink, trySymlink } from "./helpers/platform.js";
 
 let tree: string;
 const EXT = { extendedGlob: true } as const;
@@ -353,7 +353,7 @@ describe("backslash quoting", () => {
     mkdirSync(join(quoted, "sub"));
     writeFileSync(join(quoted, "sub", "b.txt"), "");
     writeFileSync(join(quoted, "a.txt"), "");
-    writeFileSync(join(quoted, "star*name"), "");
+    if (canOddFilenames) writeFileSync(join(quoted, "star*name"), "");
   });
 
   afterAll(() => rmSync(quoted, { recursive: true, force: true }));
@@ -371,7 +371,9 @@ describe("backslash quoting", () => {
   ];
 
   for (const [pattern, expected] of cases) {
-    it(`${pattern} matches ${expected.join(", ")}`, () => {
+    // A case naming `star*name` needs a filename Windows will not create.
+    const odd = expected.some((name) => name.includes("*"));
+    it.skipIf(odd && !canOddFilenames)(`${pattern} matches ${expected.join(", ")}`, () => {
       expect(globSync(pattern, { cwd: quoted, ...EXT, nullGlob: true })).toEqual(expected);
     });
   }

@@ -1,4 +1,5 @@
-import { mkdtempSync, rmSync, symlinkSync } from "node:fs";
+import { execFileSync } from "node:child_process";
+import { mkdtempSync, rmSync, symlinkSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -59,3 +60,46 @@ export function asPattern(path: string): string {
 
 /** True where the host has Unix user and group ids at all. */
 export const hasUnixIds: boolean = typeof process !== "undefined" && typeof process.getuid === "function";
+
+/**
+ * Whether this host can create a named pipe.
+ *
+ * Windows has no `mkfifo`, so a tree built there is missing the FIFO the
+ * recorded expectations were captured from.  This is probed when the module
+ * loads rather than while building the tree, because `it.skipIf` is evaluated
+ * as a file is collected -- before any `beforeAll` has run.
+ */
+export const canFifo: boolean = (() => {
+  if (typeof process !== "undefined" && process.env.ZG_NO_FIFO) return false;
+  let dir: string | null = null;
+  try {
+    dir = mkdtempSync(join(tmpdir(), "zg-fifo-probe-"));
+    execFileSync("mkfifo", [join(dir, "fifo")], { stdio: "ignore" });
+    return true;
+  } catch {
+    return false;
+  } finally {
+    if (dir) rmSync(dir, { recursive: true, force: true });
+  }
+})();
+
+/**
+ * Whether this host allows a filename containing `*`.
+ *
+ * Windows reserves `< > : " | ? *` in a path component and refuses them from
+ * `open` itself, so the tests for escaping a literal `*` in a pattern have
+ * nothing to match there.  Every other name the suite builds is legal on both.
+ */
+export const canOddFilenames: boolean = (() => {
+  if (typeof process !== "undefined" && process.env.ZG_NO_ODD_NAMES) return false;
+  let dir: string | null = null;
+  try {
+    dir = mkdtempSync(join(tmpdir(), "zg-oddname-probe-"));
+    writeFileSync(join(dir, "star*name"), "");
+    return true;
+  } catch {
+    return false;
+  } finally {
+    if (dir) rmSync(dir, { recursive: true, force: true });
+  }
+})();

@@ -13,7 +13,7 @@ import {
   ZshPatternError,
 } from "../src/index.js";
 import { virtualFs } from "./helpers/virtual-fs.js";
-import { canSymlink, trySymlink } from "./helpers/platform.js";
+import { canOddFilenames, canSymlink, trySymlink } from "./helpers/platform.js";
 
 let tree: string;
 
@@ -24,7 +24,7 @@ beforeAll(() => {
   writeFileSync(join(tree, "sub/b.txt"), "bb");
   writeFileSync(join(tree, "we(i)rd"), "");
   writeFileSync(join(tree, "weird"), "");
-  writeFileSync(join(tree, "star*name"), "");
+  if (canOddFilenames) writeFileSync(join(tree, "star*name"), "");
   trySymlink("..", join(tree, "sub/up")); // a loop for ***/ to survive
 });
 
@@ -33,9 +33,11 @@ afterAll(() => rmSync(tree, { recursive: true, force: true }));
 // The tree has a symlink in it, and these expectations name it.
 describe.skipIf(!canSymlink)("the asynchronous API", () => {
   it("applies qualifiers, which need stats", async () => {
-    expect(await glob("*(.)", { cwd: tree })).toEqual([
-      "a.txt", "star*name", "we(i)rd", "weird",
-    ]);
+    expect(await glob("*(.)", { cwd: tree })).toEqual(
+      canOddFilenames
+        ? ["a.txt", "star*name", "we(i)rd", "weird"]
+        : ["a.txt", "we(i)rd", "weird"],
+    );
     expect(await glob("*(/)", { cwd: tree })).toEqual(["sub"]);
     expect(await glob("*(-@)", { cwd: tree, nullGlob: true })).toEqual([]);
   });
@@ -95,8 +97,12 @@ describe("escaping in a filename generation pattern", () => {
     globSync(pattern, { cwd: tree, extendedGlob: true, nullGlob: true });
 
   it("takes an escaped operator literally", () => {
-    expect(g("star\\*name")).toEqual(["star*name"]);
     expect(g("we\\(i\\)rd")).toEqual(["we(i)rd"]);
+  });
+
+  // Windows will not create a filename with a `*` in it to match.
+  it.skipIf(!canOddFilenames)("takes an escaped wildcard literally", () => {
+    expect(g("star\\*name")).toEqual(["star*name"]);
     expect(g("star\\*n*")).toEqual(["star*name"]);
   });
 
@@ -211,7 +217,8 @@ describe("odds and ends", () => {
         nullGlob: true,
         qualifierHooks: { evaluate: (code) => code === "a(b)c" },
       }),
-    ).toHaveLength(5);
+      // Every entry in the tree, less `star*name` where it cannot exist.
+    ).toHaveLength(canOddFilenames ? 5 : 4);
   });
 
   it("keeps compiling after the pattern cache fills up", () => {
