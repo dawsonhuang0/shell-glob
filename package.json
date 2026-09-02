@@ -17,6 +17,7 @@
     "type": "git",
     "url": "git+https://github.com/dawsonhuang0/shell-glob.git"
   },
+  "author": "Dawson Huang",
   "bugs": {
     "url": "https://github.com/dawsonhuang0/shell-glob/issues"
   },
